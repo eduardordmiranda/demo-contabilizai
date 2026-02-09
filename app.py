@@ -1,196 +1,226 @@
 import streamlit as st
+import pandas as pd
 import datetime
-import random  # só para simular variação nos valores
+import random
+from streamlit_extras.stylable_container import stylable_container
 
-# Configuração da página
+# Configuração da página - tema moderno
 st.set_page_config(
-    page_title="Contabiliza AI - Demonstração",
+    page_title="Contabiliza AI - Dashboard",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Função simulada de IA (substitua por chamada real ao Gemini/Claude depois)
-def simulate_ia_report(func_key):
-    today = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
-    valor_base = random.randint(5000, 30000)  # Simula variação realista
-    
-    reports = {
-        "recupera_inss": f"""
-        **Relatório de Recuperação INSS Patronal**  
-        Data: {today}  
-
-        **Valor estimado recuperável:** R$ {valor_base:,.2f}  
-        **Atualização SELIC aproximada:** +R$ {valor_base * 0.08:,.2f}  
-
-        **Itens encontrados:**  
-        - Verbas indenizatórias mal classificadas: R$ {valor_base//3:,.2f}  
-        - Horas extras sem reflexos corretos: R$ {valor_base//4:,.2f}  
-        - Adicional noturno/insalubridade indevido: R$ {valor_base//5:,.2f}  
-
-        **Risco de questionamento:** Médio  
-        **Próximos passos:** Gerar PER/DCOMP + anexar eSocial/GFIP  
-        """,
-
-        "conciliacao": f"""
-        **Conciliação Bancária Inteligente**  
-        Data: {today}  
-
-        **Divergências detectadas:** 7 itens  
-        **Lançamentos sugeridos:** 12  
-
-        Exemplos:  
-        - Taxa bancária não lançada: R$ 47,50  
-        - Depósito duplicado: R$ 1.200,00  
-        - Juros de mora não contabilizado  
-
-        **Tempo economizado estimado:** 8–12 horas/semana
-        """,
-
-        "alertas_fiscais": f"""
-        **Alertas Fiscais Proativos**  
-        Data: {today}  
-
-        **Pendências críticas:** DCTFWeb vencida há 3 dias  
-        **Pendências médias:** EFD-Contribuições em 5 dias  
-
-        **Ações sugeridas:**  
-        - Retificar DCTFWeb imediatamente  
-        - Compensar crédito acumulado
-        """,
-
-        "reforma": f"""
-        **Simulação Reforma Tributária**  
-        Data: {today}  
-
-        **Carga tributária atual:** 18,5%  
-        **Carga projetada (IBS/CBS):** 16,2%  
-        **Economia anual estimada:** R$ {valor_base // 2:,.2f}  
-
-        **Recomendação:** Manter regime atual por 12 meses
-        """,
-
-        "classifica_despesas": f"""
-        **Classificação Automática de Despesas**  
-        Data: {today}  
-
-        **Itens classificados:** 120  
-        **Exemplos:**  
-        - Aluguel → Despesa Operacional  
-        - Taxa bancária → Despesa Financeira (sugerido ajuste)  
-
-        **Tempo economizado:** 60–90%
-        """,
-
-        "pre_lancamentos": f"""
-        **Pré-lançamentos de Fechamento Mensal**  
-        Data: {today}  
-
-        **Lançamentos gerados:** 28  
-        **Provisões sugeridas:** Férias + 13º salário  
-
-        **Tempo economizado:** 40–70%
-        """,
-
-        "regua_cobranca": f"""
-        **Régua de Cobrança Inteligente**  
-        Data: {today}  
-
-        **Clientes inadimplentes detectados:** 4  
-        **Mensagens geradas:** Prontas para envio via WhatsApp
-        """,
-
-        "assistente": f"""
-        **Assistente de Dúvidas Contábeis**  
-        Data: {today}  
-
-        **Resposta IA:** Para esse CFOP, o CST correto é 00 (tributada integralmente) conforme legislação vigente.
-        """,
-
-        "planejamento": f"""
-        **Planejamento Tributário Simples**  
-        Data: {today}  
-
-        **Sugestões principais:**  
-        - Distribuição de lucros vs pró-labore: economia R$ {valor_base // 3:,.2f}/ano  
-        - Compensação de créditos acumulados: R$ {valor_base // 4:,.2f}
-        """,
-
-        "incentivos": f"""
-        **Incentivos Fiscais Setoriais**  
-        Data: {today}  
-
-        **Elegibilidade encontrada:** Redução de base ICMS para TI (SC)  
-        **Economia estimada:** R$ {valor_base // 2:,.2f}/ano
-        """
+# Tema escuro + cores modernas
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0e1117;
+        color: #e0e0e0;
     }
+    .stSidebar {
+        background-color: #161b22;
+    }
+    .card {
+        background-color: #1f2937;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #10b981;
+    }
+    .metric-label {
+        font-size: 1rem;
+        color: #9ca3af;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Dados simulados (substitua por reais depois)
+@st.cache_data
+def load_data():
+    clientes = pd.DataFrame({
+        'Cliente': [f"Empresa {i}" for i in range(1, 51)],
+        'CNPJ': [f"12.345.678/000{i}-99" for i in range(1, 51)],
+        'Regime Atual': random.choices(['Simples Nacional', 'Lucro Presumido', 'Lucro Real'], k=50),
+        'Regime Ideal': random.choices(['Simples Nacional', 'Lucro Presumido', 'Lucro Real'], k=50),
+        'Recuperação Potencial (R$)': [random.randint(5000, 45000) for _ in range(50)],
+        'Produtos Errados': random.randint(0, 15) for _ in range(50),
+        'Status': random.choices(['Ação Imediata', 'Médio', 'Baixo'], k=50)
+    })
     
-    return reports.get(func_key, "<p>Relatório gerado com sucesso (simulação).</p>")
+    total_recuperacao = clientes['Recuperação Potencial (R$)'].sum()
+    clientes_regime_errado = len(clientes[clientes['Regime Atual'] != clientes['Regime Ideal']])
+    total_produtos_errados = clientes['Produtos Errados'].sum()
+    
+    return clientes, total_recuperacao, clientes_regime_errado, total_produtos_errados
 
-# Título da página
-st.title("Contabiliza AI - Demonstração")
-st.markdown("### Ferramenta de IA para escritórios contábeis | Teste todas as funcionalidades")
+clientes, total_recuperacao, clientes_regime_errado, total_produtos_errados = load_data()
 
-# Menu lateral com as funções
-st.sidebar.title("Funcionalidades")
-func_choice = st.sidebar.radio(
-    "Escolha a função para testar:",
-    [
-        "1. Recuperar créditos INSS patronal",
-        "2. Conciliação bancária inteligente",
-        "3. Alertas fiscais proativos",
-        "4. Simulação Reforma Tributária",
-        "5. Classificar despesas automaticamente",
-        "6. Pré-lançamentos de fechamento",
-        "7. Régua de cobrança de clientes",
-        "8. Assistente de dúvidas contábeis",
-        "9. Planejamento tributário simples",
-        "10. Incentivos fiscais setoriais"
-    ]
-)
-
-# Mapeamento para chave interna
-func_map = {
-    "1. Recuperar créditos INSS patronal": "recupera_inss",
-    "2. Conciliação bancária inteligente": "conciliacao",
-    "3. Alertas fiscais proativos": "alertas_fiscais",
-    "4. Simulação Reforma Tributária": "reforma",
-    "5. Classificar despesas automaticamente": "classifica_despesas",
-    "6. Pré-lançamentos de fechamento": "pre_lancamentos",
-    "7. Régua de cobrança de clientes": "regua_cobranca",
-    "8. Assistente de dúvidas contábeis": "assistente",
-    "9. Planejamento tributário simples": "planejamento",
-    "10. Incentivos fiscais setoriais": "incentivos"
-}
-
-selected_func = func_map[func_choice]
-
-# Formulário genérico para entrada de dados
-with st.expander(f"Preencha os dados para {func_choice}", expanded=True):
-    dados = st.text_area(
-        "Cole aqui os dados (planilha, exportação, descrição do caso, etc.)",
-        height=150,
-        placeholder="Exemplo:\nCNPJ: 12.345.678/0001-99\nRegime: Simples Nacional\nFaturamento mensal: R$ 120.000\n..."
+# Sidebar - Navegação
+with st.sidebar:
+    st.title("Contabiliza AI")
+    st.markdown("**Dashboard de Inteligência Contábil**")
+    st.markdown("---")
+    st.info("Versão Demonstração - 2026")
+    st.markdown("### Menu Rápido")
+    selected = st.radio(
+        "Navegar",
+        ["Dashboard Principal", "Detalhes por Cliente", "Sobre a Solução"]
     )
 
-    if st.button("Gerar Relatório", type="primary"):
-        with st.spinner("Analisando com IA..."):
-            # Simula delay de IA
-            import time
-            time.sleep(1.5)
-            
-            report = simulate_ia_report(selected_func)
-            st.markdown("### Relatório Gerado")
-            st.markdown(report, unsafe_allow_html=True)
-            
-            # Botão de "download" simulado
-            st.download_button(
-                label="Baixar relatório como PDF (simulado)",
-                data=report,
-                file_name=f"relatorio_{selected_func}.txt",
-                mime="text/plain"
+# Header
+st.title("Contabiliza AI - Dashboard Inteligente")
+st.markdown(f"**Atualizado em:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
+st.markdown("---")
+
+if selected == "Dashboard Principal":
+    # Cards principais - layout moderno
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        with stylable_container(
+            key="card1",
+            css_styles="""
+                background-color: #1f2937;
+                border-radius: 12px;
+                padding: 24px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            """
+        ):
+            st.metric(
+                label="Total Recuperável",
+                value=f"R$ {total_recuperacao:,.2f}",
+                delta="Projeção 12 meses",
+                delta_color="normal"
             )
+
+    with col2:
+        with stylable_container(
+            key="card2",
+            css_styles="""
+                background-color: #1f2937;
+                border-radius: 12px;
+                padding: 24px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            """
+        ):
+            st.metric(
+                label="Clientes Regime Errado",
+                value=clientes_regime_errado,
+                delta="Oportunidade imediata",
+                delta_color="inverse"
+            )
+
+    with col3:
+        with stylable_container(
+            key="card3",
+            css_styles="""
+                background-color: #1f2937;
+                border-radius: 12px;
+                padding: 24px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            """
+        ):
+            st.metric(
+                label="Produtos/NCM Errados",
+                value=total_produtos_errados,
+                delta="Risco fiscal detectado",
+                delta_color="inverse"
+            )
+
+    st.markdown("---")
+
+    # Expansores para detalhes rápidos
+    with st.expander("Detalhes - Recuperação de Créditos", expanded=False):
+        st.dataframe(
+            clientes[['Cliente', 'Recuperação Potencial (R$)', 'Status']]
+            .sort_values('Recuperação Potencial (R$)', ascending=False)
+            .head(10)
+        )
+
+    with st.expander("Detalhes - Clientes Regime Errado", expanded=False):
+        st.dataframe(
+            clientes[clientes['Regime Atual'] != clientes['Regime Ideal']]
+            [['Cliente', 'Regime Atual', 'Regime Ideal']]
+        )
+
+    with st.expander("Detalhes - Produtos/NCM Errados", expanded=False):
+        st.dataframe(
+            clientes[clientes['Produtos Errados'] > 0]
+            [['Cliente', 'Produtos Errados']]
+            .sort_values('Produtos Errados', ascending=False)
+        )
+
+elif selected == "Detalhes por Cliente":
+    st.subheader("Busca e Detalhes por Cliente")
+    cliente_selecionado = st.selectbox("Selecione o cliente", clientes['Cliente'].tolist())
+
+    if cliente_selecionado:
+        cliente_data = clientes[clientes['Cliente'] == cliente_selecionado].iloc[0]
+
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            st.markdown(f"### {cliente_selecionado}")
+            st.markdown(f"**CNPJ:** {cliente_data['CNPJ']}")
+            st.markdown(f"**Regime Atual:** {cliente_data['Regime Atual']}")
+            st.markdown(f"**Regime Ideal:** {cliente_data['Regime Ideal']}")
+            st.markdown(f"**Recuperação Potencial:** R$ {cliente_data['Recuperação Potencial (R$)']:,.2f}")
+            st.markdown(f"**Produtos Errados:** {cliente_data['Produtos Errados']}")
+
+        with col2:
+            st.markdown("### Ações Rápidas")
+            if st.button("Gerar Mensagem de Prospecção", type="primary"):
+                mensagem = f"""
+                Olá, {cliente_selecionado.split()[0]}!
+
+                Identificamos uma oportunidade de recuperação de R$ {cliente_data['Recuperação Potencial (R$)']:,.2f} em créditos previdenciários na sua folha de pagamento.
+
+                Além disso, seu enquadramento tributário atual pode estar gerando custo extra.
+
+                Podemos agendar uma conversa rápida (15 min) para mostrar o valor exato e os próximos passos?
+
+                Abraços,
+                [Seu Nome] - Contabiliza AI
+                """
+                st.text_area("Mensagem gerada (copie e envie via WhatsApp)", mensagem, height=150)
+                st.success("Mensagem pronta! Copie e envie.")
+
+elif selected == "Sobre a Solução":
+    st.subheader("Sobre a Contabiliza AI")
+    st.markdown("""
+    **Objetivo principal**  
+    Transformar escritórios contábeis em máquinas de recuperação de receita e redução de custo operacional.
+
+    **Principais ganhos**
+    - Recuperação média de R$ 5–30 mil por cliente (INSS patronal, tributos)
+    - Redução de 30–50% do tempo em tarefas repetitivas
+    - Menos 1–3 auxiliares/estagiários para cada 20–30 clientes
+    - Aumento de fidelização e ticket médio (contador vira consultor)
+
+    **Tecnologia**  
+    - IA para análise inteligente (Gemini/Claude)
+    - Automação de fluxos (WhatsApp, relatórios, alertas)
+    - Integração futura com sistemas contábeis (Omie, Domínio, etc.)
+
+    **Preço sugerido**  
+    R$ 497–997/mês por escritório (depende do volume de clientes)
+    """)
 
 # Rodapé
 st.markdown("---")
-st.caption("Contabiliza AI - Demonstração | Versão protótipo | 2026")
+st.caption("Contabiliza AI - Demonstração | Prototipo Streamlit | 2026")
