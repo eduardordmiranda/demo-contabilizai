@@ -1,122 +1,178 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from datetime import datetime
 
-# --- CONFIGURAÇÃO DA PÁGINA (FORÇAR TEMA CLARO PARA COMBINAR COM A IMAGEM) ---
-st.set_page_config(page_title="Contabiliza AI | Pro", layout="wide")
+# --- CONFIGURAÇÃO DA PÁGINA ---
+st.set_page_config(
+    page_title="Contabiliza AI | Hub Performance",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# --- CSS DEFINITIVO (UI/UX INDUSTRIAL) ---
+# --- CSS DE ALTA PERFORMANCE (UI/UX) ---
 st.markdown("""
     <style>
-    /* Reset de fundo para cinza claro industrial */
-    .stApp { background-color: #f0f2f5; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
     
-    /* Barra Superior Estilo Dashboard */
-    .header-bar {
-        background-color: #343a40; padding: 10px 20px;
-        display: flex; justify-content: space-between; align-items: center;
-        color: white; margin: -60px -100px 20px -100px;
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #F8FAFC;
     }
 
-    /* Grid de Cards Coloridos */
-    .card-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
-    .card {
-        flex: 1; padding: 15px; border-radius: 4px; color: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left;
+    /* Removendo padding padrão do Streamlit */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
-    .c-blue { background-color: #4da3ff; }
-    .c-cyan { background-color: #4bc0c0; }
-    .c-orange { background-color: #ff9f40; }
-    .c-pink { background-color: #ff6384; }
+
+    /* Header Estilizado */
+    .main-header {
+        background: linear-gradient(90deg, #1E293B 0%, #334155 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        color: white;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Grid de Filtros Lateral */
+    .filter-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    /* Cards de Indicadores (Estilo Moderno) */
+    .st-emotion-cache-12w0qpk { gap: 1rem; } /* Ajuste de espaçamento de colunas */
     
-    .card-title { font-size: 14px; opacity: 0.9; margin-bottom: 5px; }
-    .card-value { font-size: 24px; font-weight: bold; }
-
-    /* Layout Lateral (Filtros) */
-    .filter-box {
-        background-color: white; padding: 20px; border-radius: 5px;
-        border: 1px solid #ddd; margin-bottom: 20px;
+    .stat-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+        color: white;
+        transition: transform 0.3s ease;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
     }
+    .stat-card:hover { transform: translateY(-5px); }
+    
+    .bg-gradient-blue { background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); }
+    .bg-gradient-cyan { background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); }
+    .bg-gradient-orange { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+    .bg-gradient-rose { background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%); }
 
-    /* Grid Azul de Status (Lado Esquerdo Inferior) */
-    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background-color: #4da3ff; border: 2px solid #4da3ff; }
-    .status-item { background-color: #5dafff; color: white; padding: 15px; text-align: center; border: 1px solid #4da3ff; }
-    .status-val { font-size: 28px; font-weight: bold; display: block; }
-    .status-lab { font-size: 11px; text-transform: uppercase; }
+    /* Painel Azul de Operações (Igual à imagem) */
+    .op-panel {
+        background-color: #2563EB;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+    .op-row { display: flex; border-bottom: 1px solid #3B82F6; }
+    .op-col {
+        flex: 1;
+        padding: 1rem;
+        text-align: center;
+        color: white;
+        border-right: 1px solid #3B82F6;
+    }
+    .op-col:last-child { border-right: none; }
+    .op-val { font-size: 1.5rem; font-weight: 700; display: block; }
+    .op-lab { font-size: 0.65rem; text-transform: uppercase; font-weight: 600; opacity: 0.8; }
 
-    /* Esconder elementos chatos do streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER SIMULADO ---
+# --- HEADER ---
 st.markdown("""
-    <div class="header-bar">
-        <span><b>Contabiliza AI</b> | Performance v3.0</span>
-        <span>Olá, Dr. Otávio • Unidade São Paulo ⚙️</span>
+    <div class="main-header">
+        <div>
+            <span style="font-size: 1.2rem; font-weight: 700; letter-spacing: 1px;">CONTABILIZA AI</span>
+            <span style="margin-left: 10px; opacity: 0.6; font-size: 0.9rem;">| Performance Dashboard v3.0</span>
+        </div>
+        <div style="text-align: right;">
+            <span style="font-size: 0.8rem; opacity: 0.8;">Qualidade Aplicada Ltda.</span><br>
+            <span style="font-weight: 600;">Dr. Otávio Silveira</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- LAYOUT EM COLUNAS ---
-col_sidebar, col_main = st.columns([1, 3])
+# --- CORPO PRINCIPAL ---
+col_side, col_main = st.columns([1, 3.5])
 
-with col_sidebar:
-    st.markdown('<div class="filter-box">', unsafe_allow_html=True)
-    st.subheader("DashBoard Performance")
-    st.date_input("Início", value=pd.to_datetime("2019-02-01"))
-    st.date_input("Fim", value=pd.to_datetime("2020-03-09"))
-    st.selectbox("Tipo de Atividade", ["Auditoria 5S", "PIS/COFINS", "Recuperação INSS"])
-    st.button("🔄 Aplicar Filtros", use_container_width=True)
+with col_side:
+    st.markdown('<div class="filter-card">', unsafe_allow_html=True)
+    st.markdown("### 🛠️ Configurações")
+    periodo = st.date_input("Período de Análise", [datetime(2024, 1, 1), datetime(2026, 2, 9)])
+    atividade = st.selectbox("Módulo de IA", ["Auditoria Fiscal", "Recuperação Previdenciária", "Automação de Folha"])
+    st.button("Aplicar Filtros Inteligentes", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Grid Azul de Performance (Igual à imagem 1)
+    # Painel de Status Operacional
     st.markdown("""
-        <div class="status-grid">
-            <div class="status-item"><span class="status-lab">Concluídas</span><span class="status-val">9</span></div>
-            <div class="status-item"><span class="status-lab">Menor Pontuação</span><span class="status-val">37</span></div>
-            <div class="status-item"><span class="status-lab">Pendentes</span><span class="status-val">1</span></div>
-            <div class="status-item"><span class="status-lab">Maior Pontuação</span><span class="status-val">91</span></div>
-            <div class="status-item"><span class="status-lab">Canceladas</span><span class="status-val">0</span></div>
-            <div class="status-item"><span class="status-lab">Tempo Médio</span><span class="status-val">12d</span></div>
+        <div class="op-panel">
+            <div class="op-row">
+                <div class="op-col"><span class="op-lab">Concluídas</span><span class="op-val">124</span></div>
+                <div class="op-col"><span class="op-lab">Pendentes</span><span class="op-val">12</span></div>
+            </div>
+            <div class="op-row">
+                <div class="op-col"><span class="op-lab">Menor Pont.</span><span class="op-val">42</span></div>
+                <div class="op-col"><span class="op-lab">Maior Pont.</span><span class="op-val">98</span></div>
+            </div>
+            <div class="op-row" style="border-bottom: none;">
+                <div class="op-col"><span class="op-lab">Eficiência</span><span class="op-val">94%</span></div>
+                <div class="op-col"><span class="op-lab">Tempo Médio</span><span class="op-val">3d</span></div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
 with col_main:
     # Cards Superiores Coloridos
-    st.markdown("""
-        <div class="card-row">
-            <div class="card c-blue"><div class="card-title">Nota Média</div><div class="card-value">65,44</div></div>
-            <div class="card c-cyan"><div class="card-title">Atividades Totais</div><div class="card-value">10</div></div>
-            <div class="card c-orange"><div class="card-title">Comentários</div><div class="card-value">4</div></div>
-            <div class="card c-pink"><div class="card-title">Total de Notas</div><div class="card-value">13</div></div>
-        </div>
-    """, unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown('<div class="stat-card bg-gradient-blue"><h4>Nota Média</h4><h2>84,2</h2></div>', unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="stat-card bg-gradient-cyan"><h4>Crédito Total</h4><h2>R$ 420k</h2></div>', unsafe_allow_html=True)
+    with c3:
+        st.markdown('<div class="stat-card bg-gradient-orange"><h4>Empresas</h4><h2>42</h2></div>', unsafe_allow_html=True)
+    with c4:
+        st.markdown('<div class="stat-card bg-gradient-rose"><h4>Riscos</h4><h2>3</h2></div>', unsafe_allow_html=True)
 
-    # Gráfico de Linhas (Simulando a imagem)
-    st.markdown("#### Indicadores Gerais no Período")
-    fig = go.Figure()
-    datas = ['01-02-19', '08-04-19', '14-06-19', '20-08-19', '26-10-19', '01-01-20', '09-03-20']
+    # Gráfico Principal
+    st.markdown("<br>#### 📈 Tendência de Recuperação vs. Auditoria", unsafe_allow_html=True)
     
-    fig.add_trace(go.Scatter(x=datas, y=[25, 25, 45, 45, 85, 85, 60], name='Potencial Crédito', line=dict(color='#4da3ff', width=3)))
-    fig.add_trace(go.Scatter(x=datas, y=[40, 0, 15, 0, 10, 0, 15], name='Atividades', line=dict(color='#ff6384', width=2)))
-    fig.add_trace(go.Scatter(x=datas, y=[10, 0, 10, 0, 10, 0, 5], name='Riscos', line=dict(color='#4bc0c0', width=2)))
+    # Criando gráfico Plotly profissional
+    fig = go.Figure()
+    datas = ['Jan/25', 'Fev/25', 'Mar/25', 'Abr/25', 'Mai/25', 'Jun/25']
+    fig.add_trace(go.Scatter(x=datas, y=[10, 25, 40, 35, 60, 90], mode='lines+markers', name='Créditos (R$)', 
+                             line=dict(color='#3B82F6', width=4), marker=dict(size=8)))
+    fig.add_trace(go.Bar(x=datas, y=[5, 15, 10, 20, 15, 25], name='Riscos Detectados', marker_color='#F43F5E', opacity=0.3))
 
     fig.update_layout(
-        margin=dict(l=0, r=0, t=20, b=0),
-        height=350,
+        margin=dict(l=0, r=0, t=10, b=0),
+        height=320,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True, gridcolor='#E2E8F0')
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-    # Tabela de Oportunidades (Agora renderizando CORRETAMENTE)
-    st.markdown("#### 📂 Detalhamento de Oportunidades")
-    df_show = pd.DataFrame({
-        "Empresa": ["Farmácia Central", "Auto Peças Silva", "Supermercado Ideal", "Clínica de Olhos"],
-        "Crédito Identificado": ["R$ 18.500", "R$ 42.300", "R$ 41.000", "R$ 31.900"],
-        "Tipo": ["PIS/COFINS", "ICMS-ST", "INSS Patronal", "ISS"],
-        "Status": ["Pendente", "Em Análise", "Pendente", "Concluído"]
+    # Tabela de Dados Estilizada
+    st.markdown("#### 📂 Oportunidades por Cliente")
+    df = pd.DataFrame({
+        "Cliente": ["Farmácia Santo Antônio", "Mecânica Diesel Pro", "Supermercado Real", "Clínica Bem Estar"],
+        "Crédito Identificado": ["R$ 24.500,00", "R$ 42.100,00", "R$ 156.900,00", "R$ 12.400,00"],
+        "Status": ["Auditado ✅", "Aguardando e-CAC ⏳", "Pendente ❌", "Concluído ✅"]
     })
-    st.table(df_show) # Usando a função nativa st.table para evitar erros de HTML
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+# --- FOOTER ---
+st.markdown("---")
+st.caption("Contabiliza AI © 2026 - Tecnologia Propriatária de Inteligência Fiscal em Nuvem.")
