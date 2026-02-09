@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import random
-from streamlit_extras.stylable_container import stylable_container
+import plotly.express as px
 
 # Configuração da página - tema moderno
 st.set_page_config(
@@ -12,41 +12,47 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Tema escuro + estilo moderno
+# CSS moderno e profissional (inspirado no seu exemplo)
 st.markdown("""
     <style>
     .stApp {
         background-color: #0f172a;
         color: #e2e8f0;
+        font-family: 'Segoe UI', sans-serif;
     }
     .stSidebar {
         background-color: #1e293b;
     }
     .card {
         background-color: #1e293b;
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         transition: all 0.3s ease;
         cursor: pointer;
+        text-align: center;
     }
     .card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 30px rgba(0,0,0,0.5);
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.5);
     }
     .metric-value {
-        font-size: 2.8rem;
+        font-size: 2.6rem;
         font-weight: 700;
         color: #10b981;
     }
     .metric-label {
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: #94a3b8;
     }
     .stExpander {
         background-color: #1e293b !important;
         border-radius: 12px;
+        border: none;
+    }
+    .stExpander > div > div {
+        background-color: #1e293b !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -61,16 +67,21 @@ def load_data():
         'Regime Ideal': random.choices(['Simples Nacional', 'Lucro Presumido', 'Lucro Real'], k=50),
         'Recuperação Potencial (R$)': [random.randint(5000, 45000) for _ in range(50)],
         'Produtos Errados': [random.randint(0, 15) for _ in range(50)],
-        'Status': random.choices(['Ação Imediata', 'Médio', 'Baixo'], k=50)
+        'Status': random.choices(['Ação Imediata', 'Médio', 'Baixo'], k=50),
+        'Data Análise': [datetime.datetime.now() - datetime.timedelta(days=random.randint(1, 90)) for _ in range(50)]
     })
     
     total_recuperacao = clientes['Recuperação Potencial (R$)'].sum()
     clientes_regime_errado = len(clientes[clientes['Regime Atual'] != clientes['Regime Ideal']])
     total_produtos_errados = clientes['Produtos Errados'].sum()
     
-    return clientes, total_recuperacao, clientes_regime_errado, total_produtos_errados
+    # Dados para gráfico simples
+    df_grafico = clientes[['Data Análise', 'Recuperação Potencial (R$)']].sort_values('Data Análise')
+    df_grafico['Acumulado'] = df_grafico['Recuperação Potencial (R$)'].cumsum()
+    
+    return clientes, total_recuperacao, clientes_regime_errado, total_produtos_errados, df_grafico
 
-clientes, total_recuperacao, clientes_regime_errado, total_produtos_errados = load_data()
+clientes, total_recuperacao, clientes_regime_errado, total_produtos_errados, df_grafico = load_data()
 
 # Sidebar
 with st.sidebar:
@@ -89,67 +100,47 @@ st.markdown(f"**Atualizado em:** {datetime.datetime.now().strftime('%d/%m/%Y %H:
 st.markdown("---")
 
 if selected == "Dashboard Principal":
-    # Cards principais - layout moderno
+    # Cards principais - layout moderno e clicável
     col1, col2, col3 = st.columns(3, gap="medium")
 
     with col1:
-        with stylable_container(
-            key="card_recuperacao",
-            css_styles="""
-                background-color: #1e293b;
-                border-radius: 16px;
-                padding: 24px;
-                text-align: center;
-            """
-        ):
-            st.metric(
-                label="Total Recuperável",
-                value=f"R$ {total_recuperacao:,.2f}",
-                delta="Projeção 12 meses",
-                delta_color="normal"
-            )
+        with st.container():
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.metric("Total Recuperável", f"R$ {total_recuperacao:,.2f}", "Projeção 12 meses")
+            st.markdown('</div>', unsafe_allow_html=True)
             if st.button("Ver detalhes", key="btn_rec", use_container_width=True):
                 st.session_state['expand_rec'] = True
 
     with col2:
-        with stylable_container(
-            key="card_regime",
-            css_styles="""
-                background-color: #1e293b;
-                border-radius: 16px;
-                padding: 24px;
-                text-align: center;
-            """
-        ):
-            st.metric(
-                label="Clientes Regime Errado",
-                value=clientes_regime_errado,
-                delta="Oportunidade imediata",
-                delta_color="inverse"
-            )
+        with st.container():
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.metric("Clientes Regime Errado", clientes_regime_errado, "Oportunidade imediata", delta_color="inverse")
+            st.markdown('</div>', unsafe_allow_html=True)
             if st.button("Ver detalhes", key="btn_regime", use_container_width=True):
                 st.session_state['expand_regime'] = True
 
     with col3:
-        with stylable_container(
-            key="card_produtos",
-            css_styles="""
-                background-color: #1e293b;
-                border-radius: 16px;
-                padding: 24px;
-                text-align: center;
-            """
-        ):
-            st.metric(
-                label="Produtos/NCM Errados",
-                value=total_produtos_errados,
-                delta="Risco fiscal detectado",
-                delta_color="inverse"
-            )
+        with st.container():
+            st.markdown('<div class="card">', unsafe_allow_html=True)
+            st.metric("Produtos/NCM Errados", total_produtos_errados, "Risco fiscal detectado", delta_color="inverse")
+            st.markdown('</div>', unsafe_allow_html=True)
             if st.button("Ver detalhes", key="btn_prod", use_container_width=True):
                 st.session_state['expand_prod'] = True
 
     st.markdown("---")
+
+    # Gráfico de evolução (inspiração no seu exemplo)
+    st.subheader("Evolução da Recuperação Potencial")
+    fig = px.line(df_grafico, x='Data Análise', y='Acumulado',
+                  title="Acumulado de Recuperação (R$)",
+                  labels={'Acumulado': 'Valor Acumulado (R$)', 'Data Análise': 'Período'},
+                  color_discrete_sequence=["#10b981"])
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font_color="#e2e8f0"
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
     # Expansores condicionais
     if st.session_state.get('expand_rec', False):
@@ -194,7 +185,9 @@ elif selected == "Detalhes por Cliente":
     if cliente_selecionado:
         cliente_data = clientes[clientes['Cliente'] == cliente_selecionado].iloc[0]
 
-        with st.container():
+        col_left, col_right = st.columns([2, 1])
+
+        with col_left:
             st.markdown(f"### {cliente_selecionado}")
             st.markdown(f"**CNPJ:** {cliente_data['CNPJ']}")
             st.markdown(f"**Regime Atual:** {cliente_data['Regime Atual']}")
@@ -203,10 +196,11 @@ elif selected == "Detalhes por Cliente":
             st.markdown(f"**Produtos Errados:** {cliente_data['Produtos Errados']}")
             st.markdown(f"**Status:** {cliente_data['Status']}")
 
-        st.markdown("### Ações Rápidas")
-        
-        if st.button("Gerar Mensagem de Prospecção", type="primary"):
-            mensagem = f"""
+        with col_right:
+            st.markdown("### Ações Rápidas")
+            
+            if st.button("Gerar Mensagem de Prospecção", type="primary", use_container_width=True):
+                mensagem = f"""
 Olá, {cliente_selecionado.split()[0]}!
 
 Identificamos uma oportunidade real de **recuperar R$ {cliente_data['Recuperação Potencial (R$)']:,.2f}** em créditos previdenciários na sua folha de pagamento.
@@ -217,9 +211,9 @@ Podemos agendar uma conversa rápida (15 minutos) para mostrar o valor exato e o
 
 Abraços,  
 [Seu Nome] - Contabiliza AI
-            """
-            st.text_area("Mensagem gerada (copie e envie via WhatsApp)", mensagem, height=180)
-            st.success("Mensagem pronta! Copie e envie.")
+                """
+                st.text_area("Mensagem gerada (copie e envie via WhatsApp)", mensagem, height=180)
+                st.success("Mensagem pronta! Copie e envie.")
 
 elif selected == "Sobre a Solução":
     st.subheader("Sobre a Contabiliza AI")
