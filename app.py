@@ -92,4 +92,43 @@ st.markdown("### 📊 Oportunidades de Recuperação (Detalhado)")
 dados_tabela = [
     ["Farmácia Central", "18.500", "PIS/COFINS", "Pendente", "10", "Pendente"],
     ["Auto Peças Silva", "42.300", "ICMS-ST", "Em Análise", "26", "Aguardando"],
-    ["Supermercado Ideal", "41.000", "INSS Patronal", "Pendente", "18", "P
+    ["Supermercado Ideal", "41.000", "INSS Patronal", "Pendente", "18", "Pendente"],
+    ["Clínica de Olhos", "31.900", "ISS/Verbas", "Concluído", "20", "Concluído"],
+]
+
+# Construção da tabela em HTML para controle total do design
+tabela_html = """
+<table class="styled-table">
+    <thead>
+        <tr>
+            <th>Empresa</th>
+            <th>Crédito (R$)</th>
+            <th>Origem</th>
+            <th>Status Auditoria</th>
+            <th>Notas</th>
+            <th>Status Mensal</th>
+        </tr>
+    </thead>
+    <tbody>
+"""
+
+for linha in dados_tabela:
+    tabela_html += f"""
+        <tr>
+            <td><b>{linha[0]}</b></td>
+            <td style="color: #28a745; font-weight: bold;">R$ {linha[1]}</td>
+            <td>{linha[2]}</td>
+            <td><span style="background: #fff3cd; padding: 4px 8px; border-radius: 4px;">{linha[3]}</span></td>
+            <td>{linha[4]}</td>
+            <td>{linha[5]}</td>
+        </tr>
+    """
+
+tabela_html += "</tbody></table>"
+
+st.markdown(tabela_html, unsafe_allow_html=True)
+
+# --- BOTÃO DE AÇÃO ---
+st.markdown("<br>", unsafe_allow_html=True)
+if st.button("📥 Exportar Relatórios de Prospecção (PDF)"):
+    st.success("Gerando relatórios detalhados para os 4 clientes...")
