@@ -3,172 +3,128 @@ import pandas as pd
 import plotly.graph_objects as go
 import time
 
-# --- CONFIGURAÇÃO DE ELITE ---
-st.set_page_config(page_title="Contabiliza AI | Enterprise", layout="wide", initial_sidebar_state="collapsed")
+# --- CONFIGURAÇÃO DE ALTA PERFORMANCE ---
+st.set_page_config(page_title="Contabiliza AI | Performance Real", layout="wide", initial_sidebar_state="collapsed")
 
-# --- DATABASE DE ALTA PERFORMANCE ---
-if 'db' not in st.session_state:
-    st.session_state.db = pd.DataFrame([
-        {"id": 1, "empresa": "Indústrias Delta S.A", "credito": 854200.00, "origem": "Exclusão ICMS/PIS/COFINS", "status": "Oportunidade Crítica", "risco": "Mínimo", "cor": "#3b82f6"},
-        {"id": 2, "empresa": "Varejo Global Ltda", "credito": 312500.00, "origem": "PIS/COFINS Monofásico", "status": "Auditoria Concluída", "risco": "Baixo", "cor": "#10b981"},
-        {"id": 3, "empresa": "Tech Solutions SP", "credito": 125800.00, "origem": "INSS Verbas Indenizatórias", "status": "Pendente", "risco": "Mínimo", "cor": "#f59e0b"}
-    ])
-
-# --- CONTROLE DE ESTADOS ---
-if 'screen' not in st.session_state: st.session_state.screen = 'dash'
-if 'active_id' not in st.session_state: st.session_state.active_id = None
-
-# --- CSS: O DESIGN DO UNICÓRNIO ---
+# --- CSS: DESIGN DE ELITE COM FOCO NOS DADOS ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
     
-    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0B0E14; color: #E2E8F0; }
-    
-    /* Remover Topo do Streamlit */
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F1F3F6; color: #333; }
     header {visibility: hidden;}
-    .block-container {padding-top: 2rem;}
+    
+    /* Grid de Cards Superiores (Cores da Imagem) */
+    .card-row { display: flex; gap: 8px; margin-bottom: 15px; }
+    .card { flex: 1; padding: 20px; color: white; border-radius: 4px; position: relative; min-height: 120px; }
+    .c-blue { background-color: #4A90E2; }
+    .c-cyan { background-color: #48C0C0; }
+    .c-orange { background-color: #F7943D; }
+    .c-pink { background-color: #F26685; }
+    
+    .card-label { font-size: 14px; opacity: 0.9; font-weight: 600; }
+    .card-value { font-size: 38px; font-weight: 800; display: block; margin-top: 5px; }
 
-    /* Glassmorphism Cards */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        padding: 25px;
-        transition: all 0.4s ease;
-    }
-    .glass-card:hover { border: 1px solid #3b82f6; box-shadow: 0 0 30px rgba(59, 130, 246, 0.2); transform: translateY(-5px); }
+    /* Painel Lateral Azul (Performance) */
+    .perf-panel { background-color: #4A90E2; color: white; border-radius: 4px; overflow: hidden; }
+    .perf-table { width: 100%; border-collapse: collapse; }
+    .perf-table td { border: 1px solid rgba(255,255,255,0.2); padding: 15px; text-align: center; width: 50%; }
+    .perf-label { font-size: 10px; text-transform: uppercase; display: block; opacity: 0.8; margin-bottom: 5px; }
+    .perf-val { font-size: 24px; font-weight: 700; }
 
-    /* Indicadores Estilizados */
-    .metric-val { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -1px; }
-    .metric-label { font-size: 14px; color: #94A3B8; text-transform: uppercase; font-weight: 600; }
-
-    /* Botão Unicórnio */
-    .stButton>button {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white; border: none; border-radius: 12px;
-        padding: 15px 30px; font-weight: 700; width: 100%;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .stButton>button:hover { box-shadow: 0 10px 20px rgba(37, 99, 235, 0.4); transform: scale(1.02); }
-
-    /* Tabela de Luxo */
-    .luxury-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
+    /* Estilo Filtros */
+    .filter-card { background: white; padding: 20px; border-radius: 4px; border: 1px solid #DFE3E8; margin-bottom: 10px; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- NAVEGAÇÃO ---
-def go_details(id):
-    st.session_state.active_id = id
-    st.session_state.screen = 'details'
+if 'view' not in st.session_state: st.session_state.view = 'main'
 
-def go_dash(): st.session_state.screen = 'dash'
+# --- LAYOUT ---
+col_side, col_main = st.columns([1, 3.2])
 
-# --- TELA 01: DASHBOARD EXECUTIVO ---
-if st.session_state.screen == 'dash':
-    # Top Bar
-    c_logo, c_user = st.columns([1, 1])
-    with c_logo: st.markdown("### 💠 CONTABILIZA AI <span style='color:#3b82f6; font-size:12px'>ENTERPRISE</span>", unsafe_allow_html=True)
-    with c_user: st.markdown("<div style='text-align:right; color:#94A3B8'>Sócio: Dr. Otávio Silveira • <b>Status: Ultra Scalable</b></div>", unsafe_allow_html=True)
+with col_side:
+    # Quadrado de Filtros
+    st.markdown('<div class="filter-card">', unsafe_allow_html=True)
+    st.markdown("#### DashBoard Performance")
+    st.caption("Período:")
+    st.code("01/02/2019\n09/03/2020")
+    st.selectbox("Tipo de Atividade:", ["5s Auditorias", "Recuperação Tributária"])
+    st.button("🔍 Aplicar Filtros", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Big Numbers
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown(f"""<div class='glass-card'><p class='metric-label'>Potencial de Crédito</p><p class='metric-val'>R$ 1.292.500</p></div>""", unsafe_allow_html=True)
-        if st.button("Explorar Carteira"): pass
-    with col2: st.markdown(f"""<div class='glass-card'><p class='metric-label'>Economia Operacional</p><p class='metric-val'>82%</p></div>""", unsafe_allow_html=True)
-    with col3: st.markdown(f"""<div class='glass-card'><p class='metric-label'>Riscos Auditados</p><p class='metric-val'>1.4M</p></div>""", unsafe_allow_html=True)
-    with col4: st.markdown(f"""<div class='glass-card'><p class='metric-label'>Faturamento Extra (Fees)</p><p class='metric-val'>R$ 258k</p></div>""", unsafe_allow_html=True)
-
-    st.markdown("<br><h4>💎 Oportunidades Identificadas pela IA</h4>", unsafe_allow_html=True)
-
-    # Tabela Customizada
-    for index, row in st.session_state.db.iterrows():
-        with st.container():
-            st.markdown(f"""
-            <div class="glass-card" style="margin-bottom:15px; padding: 15px 25px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h4 style="margin:0;">{row['empresa']}</h4>
-                        <span style="color:#94A3B8; font-size:12px;">{row['origem']}</span>
-                    </div>
-                    <div style="text-align:center;">
-                        <span style="color:{row['cor']}; font-weight:800; font-size:18px;">R$ {row['credito']:,.2f}</span><br>
-                        <span style="color:#94A3B8; font-size:10px;">Crédito Líquido</span>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button(f"Analisar Impacto: {row['empresa']}", key=f"btn_{row['id']}"):
-                go_details(row['id'])
-                st.rerun()
-
-# --- TELA 02: DEEP DIVE & PROSPECÇÃO ---
-elif st.session_state.screen == 'details':
-    client = st.session_state.db[st.session_state.db['id'] == st.session_state.active_id].iloc[0]
-    
-    st.markdown(f"#### ← <span style='cursor:pointer' onclick='window.location.reload()'>Voltar</span>", unsafe_allow_html=True)
-    if st.button("Voltar ao Dashboard Geral"): go_dash(); st.rerun()
-
-    st.title(f"Estratégia: {client['empresa']}")
-    
-    c_left, c_right = st.columns([1.5, 1])
-    
-    with c_left:
-        st.markdown(f"""
-        <div class="glass-card">
-            <h3>Diagnóstico da Inteligência</h3>
-            <p style="color:#94A3B8">Nossa IA cruzou 60 meses de DCTFWeb com notas fiscais de entrada/saída.</p>
-            <div style="background:rgba(59, 130, 246, 0.1); padding:20px; border-radius:12px;">
-                <h4 style="color:#3b82f6; margin-top:0;">Possibilidade de Oferta</h4>
-                <p>Identificamos que a empresa não segregou corretamente o PIS/COFINS Monofásico. 
-                Isso gerou um pagamento a maior de <b>R$ {client['credito']:,.2f}</b>.</p>
-                <p><b>Estratégia:</b> Compensação Administrativa via PER/DCOMP. Dinheiro no caixa em até 30 dias.</p>
-            </div>
+    # Painel de Status Azul (Fiel à Imagem)
+    st.markdown("""
+        <div class="perf-panel">
+            <table class="perf-table">
+                <tr>
+                    <td><span class="perf-label">Atividades Concluídas</span><span class="perf-val">9</span></td>
+                    <td><span class="perf-label">Menor Pontuação</span><span class="perf-val">37</span></td>
+                </tr>
+                <tr>
+                    <td><span class="perf-label">Atividades Pendentes</span><span class="perf-val">1</span></td>
+                    <td><span class="perf-label">Maior Pontuação</span><span class="perf-val">91</span></td>
+                </tr>
+                <tr>
+                    <td><span class="perf-label">Atividades Canceladas</span><span class="perf-val">0</span></td>
+                    <td><span class="perf-label">Tempo Médio (Dias)</span><span class="perf-val">12</span></td>
+                </tr>
+                <tr>
+                    <td><span class="perf-label">Na Média</span><span class="perf-val">5</span></td>
+                    <td><span class="perf-label">Desvio Padrão</span><span class="perf-val">19,36</span></td>
+                </tr>
+            </table>
         </div>
-        """, unsafe_allow_html=True)
-        
-        # Gráfico de Projeção
-        st.markdown("<br>", unsafe_allow_html=True)
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = client['credito'],
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Impacto no Fluxo de Caixa (R$)", 'font': {'size': 20, 'color': '#fff'}},
-            gauge = {'axis': {'range': [None, 1000000]}, 'bar': {'color': "#3b82f6"}}
-        ))
-        fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "#fff"})
-        st.plotly_chart(fig, use_container_width=True)
+    """, unsafe_allow_html=True)
 
-    with c_right:
-        st.markdown("### 🚀 Ativar Prospecção IA")
-        st.write("A IA irá gerar uma proposta executiva visual e abordar o cliente via canal oficial.")
-        
-        if st.button("GERAR PROPOSTA E ENVIAR"):
-            with st.status("IA modelando proposta financeira...", expanded=True) as status:
-                time.sleep(1.5)
-                st.write("Gerando imagem realista de impacto econômico...")
-                time.sleep(1.5)
-                st.write("Finalizando texto humanizado (Tom Executivo)...")
-                status.update(label="Proposta Enviada com Sucesso!", state="complete", expanded=False)
-            
-            st.balloons()
-            
-            st.markdown(f"""
-            <div style="background:white; color:#000; padding:30px; border-radius:15px; border-left: 10px solid #3b82f6;">
-                <p style="font-size:12px; color:#666;">MENSAGEM ENVIADA VIA WHATSAPP BUSINESS</p>
-                <p><b>Olá, Diretor da {client['empresa']}.</b></p>
-                <p>Analisamos sua conta aqui na contabilidade e identificamos um 'fôlego' de <b>R$ {client['credito']:,.2f}</b> parado nos seus impostos dos últimos anos.</p>
-                <p>Não é empréstimo, é dinheiro seu que foi pago a maior e que podemos recuperar agora para investir na sua operação. Veja a projeção que nossa IA fez para você:</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Imagem Realista da IA (Simulada)
-            st.image("https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80", 
-                     caption="Estudo de Viabilidade Econômica gerado pela Contabiliza AI")
+with col_main:
+    # Top Cards com Indicadores EXATOS da sua imagem
+    st.markdown("""
+        <div class="card-row">
+            <div class="card c-blue"><span class="card-label">Nota Média</span><span class="card-value">65,44</span></div>
+            <div class="card c-cyan"><span class="card-label">Atividades Totais</span><span class="card-value">10</span></div>
+            <div class="card c-orange"><span class="card-label">Comentários</span><span class="card-value">4</span></div>
+            <div class="card c-pink"><span class="card-label">Total de Notas/Fotos</span><span class="card-value">13</span></div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Gráfico de Linhas Profissional
+    st.markdown("<p style='text-align:center; color:#666; font-size:12px;'>Indicadores Gerais no Período: 01/02/2019 - 09/03/2020</p>", unsafe_allow_html=True)
+    
+    fig = go.Figure()
+    dates = ['01-02-19', '08-04-19', '14-06-19', '20-08-19', '26-10-19', '01-01-20', '09-03-20']
+    
+    # Linha Azul (Principal)
+    fig.add_trace(go.Scatter(x=dates, y=[30, 28, 48, 48, 85, 85, 62], mode='lines+markers', name='Performance', line=dict(color='#4A90E2', width=3)))
+    # Linha Rosa
+    fig.add_trace(go.Scatter(x=dates, y=[42, 0, 18, 0, 10, 0, 18], mode='lines+markers', name='Atividades', line=dict(color='#F26685', width=2)))
+    # Linha Laranja
+    fig.add_trace(go.Scatter(x=dates, y=[10, 0, 12, 0, 12, 0, 8], mode='lines+markers', name='Créditos', line=dict(color='#F7943D', width=2)))
+
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=10, b=0), height=350,
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Tabela de Oportunidades
+    st.markdown("#### 🚀 Oportunidades de Recuperação (Análise IA)")
+    df = pd.DataFrame({
+        "Empresa": ["Farmácia Santo Antônio", "Mecânica Diesel Pro", "Supermercado Real"],
+        "Crédito Identificado": ["R$ 24.500", "R$ 42.100", "R$ 156.900"],
+        "Status": ["Pendente", "Em Análise", "Pendente"]
+    })
+    
+    # Renderizando a tabela e o botão de prospecção
+    for i, row in df.iterrows():
+        c1, c2, c3, c4 = st.columns([2, 1, 1, 1.5])
+        c1.write(f"**{row['Empresa']}**")
+        c2.write(row['Crédito Identificado'])
+        c3.write(row['Status'])
+        if c4.button(f"Prospectar {row['Empresa']}", key=f"p_{i}"):
+            with st.spinner("IA gerando abordagem humanizada..."):
+                time.sleep(2)
+                st.toast(f"Proposta enviada para {row['Empresa']}!")
+                st.success(f"A IA enviou uma imagem de impacto real para o cliente via WhatsApp.")
+        st.divider()
