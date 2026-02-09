@@ -2,132 +2,94 @@ import streamlit as st
 import pandas as pd
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Contabiliza AI | Hub de Inteligência", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Contabiliza AI | Performance", layout="wide", initial_sidebar_state="expanded")
 
-# --- CSS AVANÇADO PARA VISUAL PROFISSIONAL (UI/UX) ---
+# --- CSS PARA DESIGN INDUSTRIAL (IGUAL À IMAGEM) ---
 st.markdown("""
     <style>
-    /* Importando fonte moderna */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    /* Estilo do Fundo e Barra Lateral */
+    .main { background-color: #f4f6f9; }
+    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #dee2e6; }
     
-    html, body, [class*="css"]  { font-family: 'Inter', sans-serif; background-color: #F3F4F6; }
-    
-    /* Esconder elementos padrão do Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* Títulos e Textos */
+    h1, h2, h3 { color: #343a40; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-    /* Estilização dos Cards */
-    .metric-card {
-        background-color: white;
-        padding: 24px;
-        border-radius: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        border: 1px solid #E5E7EB;
-        transition: transform 0.2s;
+    /* Estilização dos Cards Coloridos */
+    .card-container { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .card {
+        flex: 1; min-width: 200px; padding: 20px; border-radius: 4px;
+        color: white; position: relative; overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .metric-card:hover {
-        transform: translateY(-5px);
-        border-color: #2563EB;
-    }
-    .metric-title { color: #6B7280; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em; }
-    .metric-value { color: #111827; font-size: 1.875rem; font-weight: 700; margin-top: 8px; }
-    .metric-delta { font-size: 0.875rem; margin-top: 4px; font-weight: 500; }
-    .delta-positive { color: #10B981; }
-    
-    /* Botões Customizados */
-    .stButton>button {
-        background-color: #2563EB; color: white; border-radius: 8px;
-        border: none; padding: 12px 24px; font-weight: 600; width: 100%;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover { background-color: #1E40AF; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4); }
+    .card h4 { margin: 0; font-size: 0.9rem; opacity: 0.9; font-weight: 400; }
+    .card h2 { margin: 10px 0; font-size: 1.8rem; color: white; font-weight: 700; }
+    .card .icon { position: absolute; right: 10px; bottom: 10px; opacity: 0.2; font-size: 3rem; }
+
+    /* Cores dos Cards */
+    .bg-blue { background-color: #007bff; }
+    .bg-orange { background-color: #fd7e14; }
+    .bg-green { background-color: #28a745; }
+    .bg-cyan { background-color: #17a2b8; }
+    .bg-red { background-color: #dc3545; }
+
+    /* Tabela Customizada */
+    .styled-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+    .styled-table thead tr { background-color: #e9ecef; color: #495057; text-align: left; }
+    .styled-table th, .styled-table td { padding: 12px 15px; border-bottom: 1px solid #dee2e6; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- CABEÇALHO DO HUB ---
-st.markdown("""
-    <div style='display: flex; align-items: center; margin-bottom: 30px;'>
-        <div style='background-color: #2563EB; padding: 10px; border-radius: 12px; margin-right: 15px;'>
-            <img src='https://img.icons8.com/ios-filled/50/ffffff/artificial-intelligence.png' width='30'/>
+# --- SIDEBAR (FILTROS) ---
+with st.sidebar:
+    st.image("https://img.icons8.com/fluency/48/artificial-intelligence.png", width=50)
+    st.title("Filtros")
+    st.date_input("Período", value=pd.to_datetime("2026-01-01"))
+    st.selectbox("Tipo de Atividade", ["Consultivo", "Operacional", "Auditoria"])
+    st.multiselect("Status", ["Pendente", "Em Análise", "Concluído"], default=["Pendente", "Em Análise"])
+    st.button("🚀 Aplicar Filtros")
+    st.markdown("---")
+    st.caption("Logado como: Dr. Otávio (Sócio)")
+
+# --- ÁREA PRINCIPAL ---
+st.markdown("## Dashboard Gerencial")
+st.caption("Qualidade Aplicada Ltda.")
+
+# --- LINHA DE CARDS COLORIDOS ---
+st.markdown(f"""
+    <div class="card-container">
+        <div class="card bg-blue">
+            <h4>Potential de Crédito</h4>
+            <h2>R$ 325.800</h2>
+            <div class="icon">💰</div>
         </div>
-        <div>
-            <h1 style='margin:0; color: #111827; font-size: 24px;'>Contabiliza AI - Hub</h1>
-            <p style='margin:0; color: #6B7280;'>Sistema de Gestão Inteligente 360°</p>
+        <div class="card bg-orange">
+            <h4>Conversão</h4>
+            <h2>91.5%</h2>
+            <div class="icon">📈</div>
+        </div>
+        <div class="card bg-green">
+            <h4>Eficiência Automação</h4>
+            <h2>91.5%</h2>
+            <div class="icon">🤖</div>
+        </div>
+        <div class="card bg-cyan">
+            <h4>Alertas de Risco</h4>
+            <h2>7</h2>
+            <div class="icon">⚠️</div>
+        </div>
+        <div class="card bg-red">
+            <h4>Alertas Ativos</h4>
+            <h2>1844</h2>
+            <div class="icon">🔔</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# --- GRID DE INDICADORES PRINCIPAIS (BOXES) ---
-st.markdown("### 🚀 Visão Geral de Oportunidades")
-c1, c2, c3, c4 = st.columns(4)
+# --- SEÇÃO DE TABELA (OPORTUNIDADES DETALHADAS) ---
+st.markdown("### 📊 Oportunidades de Recuperação (Detalhado)")
 
-with c1:
-    st.markdown(f"""<div class="metric-card">
-        <div class="metric-title">Créditos Recuperáveis</div>
-        <div class="metric-value">R$ 284.900</div>
-        <div class="metric-delta delta-positive">↑ 12% em relação ao mês anterior</div>
-    </div>""", unsafe_allow_html=True)
-    if st.button("Ver Auditoria", key="aud"): st.toast("Carregando Auditoria...")
-
-with c2:
-    st.markdown("""<div class="metric-card">
-        <div class="metric-title">Eficiência Operacional</div>
-        <div class="metric-value">94.2%</div>
-        <div class="metric-delta delta-positive">Aumento de +40h livres/mês</div>
-    </div>""", unsafe_allow_html=True)
-    if st.button("Ver Operação", key="ope"): st.toast("Abrindo Módulo de Automação...")
-
-with c3:
-    st.markdown("""<div class="metric-card">
-        <div class="metric-title">Risco Fiscal Ativo</div>
-        <div class="metric-value">4 Pendências</div>
-        <div class="metric-delta" style='color:#EF4444'>Ação imediata recomendada</div>
-    </div>""", unsafe_allow_html=True)
-    if st.button("Ver Compliance", key="com"): st.toast("Acessando e-CAC...")
-
-with c4:
-    st.markdown("""<div class="metric-card">
-        <div class="metric-title">Atendimento IA</div>
-        <div class="metric-value">1.240</div>
-        <div class="metric-delta delta-positive">Tickets resolvidos sem humanos</div>
-    </div>""", unsafe_allow_html=True)
-    if st.button("Ver Chatbot", key="cha"): st.toast("Abrindo Logs de Atendimento...")
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# --- SEÇÃO DE MÓDULOS 360° ---
-st.markdown("### 🛠️ Módulos de Execução")
-m1, m2 = st.columns(2)
-
-with m1:
-    with st.expander("📂 **AUDITORIA E RECUPERAÇÃO (Tributário)**", expanded=True):
-        st.write("Análise profunda de XMLs e cruzamento com e-CAC.")
-        st.checkbox("PIS/COFINS Monofásico (Segregação Automática)")
-        st.checkbox("Verbas Indenizatórias (INSS Patronal)")
-        st.checkbox("Exclusão do ICMS da base do PIS/COFINS")
-        st.button("⚙️ Configurar Regras de Auditoria")
-
-with m2:
-    with st.expander("🤖 **OPERAÇÃO E BPO (Automação)**", expanded=True):
-        st.write("Trabalho braçal executado pela Engine em Dallas.")
-        st.checkbox("Captura Automática SEFAZ (Certificado A1)")
-        st.checkbox("Fechamento de Folha via eSocial")
-        st.checkbox("Conciliação Bancária via IA (NLP)")
-        st.button("⚡ Executar Fechamento Massivo")
-
-m3, m4 = st.columns(2)
-
-with m3:
-    with st.expander("📈 **CONSULTORIA E ESTRATÉGIA**", expanded=True):
-        st.write("Transforme o contador em um conselheiro.")
-        st.info("Simulador de Reforma Tributária disponível (Cálculo IBS/CBS)")
-        st.write("Dashboards de rentabilidade por cliente.")
-        st.button("📊 Gerar Relatório Consultivo")
-
-with m4:
-    with st.expander("💬 **HUB DE COMUNICAÇÃO (White Label)**", expanded=True):
-        st.write("Seu escritório disponível 24/7.")
-        st.write("WhatsApp Business API com IA integrada.")
-        st.write("Envio automático de guias e notificações.")
-        st.button("📱 Configurar WhatsApp")
+# Dados simulados
+dados_tabela = [
+    ["Farmácia Central", "18.500", "PIS/COFINS", "Pendente", "10", "Pendente"],
+    ["Auto Peças Silva", "42.300", "ICMS-ST", "Em Análise", "26", "Aguardando"],
+    ["Supermercado Ideal", "41.000", "INSS Patronal", "Pendente", "18", "P
