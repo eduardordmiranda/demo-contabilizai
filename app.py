@@ -1,178 +1,117 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-from datetime import datetime
+import time
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(
-    page_title="Contabiliza AI | Hub Performance",
-    page_icon="🤖",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Contabiliza AI | Hub", layout="wide", initial_sidebar_state="collapsed")
 
-# --- CSS DE ALTA PERFORMANCE (UI/UX) ---
+# --- CONTROLE DE NAVEGAÇÃO (Session State) ---
+if 'view' not in st.session_state: st.session_state.view = 'dashboard'
+if 'selected_client' not in st.session_state: st.session_state.selected_client = None
+
+# --- DATABASE SIMULADO ---
+clients_db = [
+    {"nome": "Farmácia Santo Antônio", "credito": 24500, "detalhes": "Recuperação de PIS/COFINS Monofásico em medicamentos.", "oportunidade": "Redução de 12% no DAS mensal."},
+    {"nome": "Mecânica Diesel Pro", "credito": 42100, "detalhes": "Créditos de ICMS-ST sobre autopeças.", "oportunidade": "Recuperação retroativa de 60 meses."},
+    {"nome": "Supermercado Real", "credito": 156900, "detalhes": "Exclusão do ICMS da base do PIS/COFINS.", "oportunidade": "Geração de caixa imediata via compensação."},
+]
+
+# --- CSS CUSTOMIZADO ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        background-color: #F8FAFC;
-    }
-
-    /* Removendo padding padrão do Streamlit */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
-
-    /* Header Estilizado */
-    .main-header {
-        background: linear-gradient(90deg, #1E293B 0%, #334155 100%);
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        color: white;
-        margin-bottom: 2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    /* Grid de Filtros Lateral */
-    .filter-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    /* Cards de Indicadores (Estilo Moderno) */
-    .st-emotion-cache-12w0qpk { gap: 1rem; } /* Ajuste de espaçamento de colunas */
-    
     .stat-card {
-        padding: 1.5rem;
-        border-radius: 12px;
-        color: white;
-        transition: transform 0.3s ease;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        padding: 20px; border-radius: 12px; color: white; cursor: pointer;
+        transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    .stat-card:hover { transform: translateY(-5px); }
-    
-    .bg-gradient-blue { background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%); }
-    .bg-gradient-cyan { background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); }
-    .bg-gradient-orange { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
-    .bg-gradient-rose { background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%); }
-
-    /* Painel Azul de Operações (Igual à imagem) */
-    .op-panel {
-        background-color: #2563EB;
-        border-radius: 12px;
-        overflow: hidden;
-        margin-top: 1rem;
+    .stat-card:hover { transform: translateY(-5px); background: #2563EB; }
+    .client-card {
+        background: white; padding: 15px; border-radius: 8px;
+        margin-bottom: 10px; border-left: 5px solid #2563EB;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .op-row { display: flex; border-bottom: 1px solid #3B82F6; }
-    .op-col {
-        flex: 1;
-        padding: 1rem;
-        text-align: center;
-        color: white;
-        border-right: 1px solid #3B82F6;
-    }
-    .op-col:last-child { border-right: none; }
-    .op-val { font-size: 1.5rem; font-weight: 700; display: block; }
-    .op-lab { font-size: 0.65rem; text-transform: uppercase; font-weight: 600; opacity: 0.8; }
-
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER ---
-st.markdown("""
-    <div class="main-header">
-        <div>
-            <span style="font-size: 1.2rem; font-weight: 700; letter-spacing: 1px;">CONTABILIZA AI</span>
-            <span style="margin-left: 10px; opacity: 0.6; font-size: 0.9rem;">| Performance Dashboard v3.0</span>
-        </div>
-        <div style="text-align: right;">
-            <span style="font-size: 0.8rem; opacity: 0.8;">Qualidade Aplicada Ltda.</span><br>
-            <span style="font-weight: 600;">Dr. Otávio Silveira</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+# --- LÓGICA DE TELAS ---
 
-# --- CORPO PRINCIPAL ---
-col_side, col_main = st.columns([1, 3.5])
-
-with col_side:
-    st.markdown('<div class="filter-card">', unsafe_allow_html=True)
-    st.markdown("### 🛠️ Configurações")
-    periodo = st.date_input("Período de Análise", [datetime(2024, 1, 1), datetime(2026, 2, 9)])
-    atividade = st.selectbox("Módulo de IA", ["Auditoria Fiscal", "Recuperação Previdenciária", "Automação de Folha"])
-    st.button("Aplicar Filtros Inteligentes", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Painel de Status Operacional
-    st.markdown("""
-        <div class="op-panel">
-            <div class="op-row">
-                <div class="op-col"><span class="op-lab">Concluídas</span><span class="op-val">124</span></div>
-                <div class="op-col"><span class="op-lab">Pendentes</span><span class="op-val">12</span></div>
-            </div>
-            <div class="op-row">
-                <div class="op-col"><span class="op-lab">Menor Pont.</span><span class="op-val">42</span></div>
-                <div class="op-col"><span class="op-lab">Maior Pont.</span><span class="op-val">98</span></div>
-            </div>
-            <div class="op-row" style="border-bottom: none;">
-                <div class="op-col"><span class="op-lab">Eficiência</span><span class="op-val">94%</span></div>
-                <div class="op-col"><span class="op-lab">Tempo Médio</span><span class="op-val">3d</span></div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col_main:
-    # Cards Superiores Coloridos
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown('<div class="stat-card bg-gradient-blue"><h4>Nota Média</h4><h2>84,2</h2></div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="stat-card bg-gradient-cyan"><h4>Crédito Total</h4><h2>R$ 420k</h2></div>', unsafe_allow_html=True)
-    with c3:
-        st.markdown('<div class="stat-card bg-gradient-orange"><h4>Empresas</h4><h2>42</h2></div>', unsafe_allow_html=True)
-    with c4:
-        st.markdown('<div class="stat-card bg-gradient-rose"><h4>Riscos</h4><h2>3</h2></div>', unsafe_allow_html=True)
-
-    # Gráfico Principal
-    st.markdown("<br>#### 📈 Tendência de Recuperação vs. Auditoria", unsafe_allow_html=True)
+# 1. TELA DE DASHBOARD PRINCIPAL
+if st.session_state.view == 'dashboard':
+    st.title("🤖 Contabiliza AI | Performance")
     
-    # Criando gráfico Plotly profissional
-    fig = go.Figure()
-    datas = ['Jan/25', 'Fev/25', 'Mar/25', 'Abr/25', 'Mai/25', 'Jun/25']
-    fig.add_trace(go.Scatter(x=datas, y=[10, 25, 40, 35, 60, 90], mode='lines+markers', name='Créditos (R$)', 
-                             line=dict(color='#3B82F6', width=4), marker=dict(size=8)))
-    fig.add_trace(go.Bar(x=datas, y=[5, 15, 10, 20, 15, 25], name='Riscos Detectados', marker_color='#F43F5E', opacity=0.3))
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown('<div class="stat-card"><h4>Crédito Total</h4><h2>R$ 223.500</h2><p>Ver Clientes →</p></div>', unsafe_allow_html=True)
+        if st.button("Abrir Lista de Créditos", use_container_width=True):
+            st.session_state.view = 'client_list'
+            st.rerun()
+            
+    # Outros indicadores (apenas visuais)
+    with col2: st.markdown('<div class="stat-card"><h4>Empresas</h4><h2>3</h2><p>Ativas</p></div>', unsafe_allow_html=True)
+    with col3: st.markdown('<div class="stat-card"><h4>Riscos</h4><h2>Baixo</h2><p>Auditado</p></div>', unsafe_allow_html=True)
+    with col4: st.markdown('<div class="stat-card"><h4>Eficiência IA</h4><h2>94%</h2><p>Automação</p></div>', unsafe_allow_html=True)
 
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=10, b=0),
-        height=320,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(showgrid=False),
-        yaxis=dict(showgrid=True, gridcolor='#E2E8F0')
-    )
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+# 2. TELA DE LISTA DE CLIENTES
+elif st.session_state.view == 'client_list':
+    if st.button("← Voltar ao Dashboard"):
+        st.session_state.view = 'dashboard'
+        st.rerun()
+        
+    st.subheader("🏦 Clientes com Créditos Identificados")
+    st.write("Selecione um cliente para ver a oferta e prospectar.")
+    
+    for client in clients_db:
+        with st.container():
+            c1, c2, c3 = st.columns([2, 1, 1])
+            c1.markdown(f"### {client['nome']}")
+            c2.markdown(f"**Crédito:** R$ {client['credito']:,}")
+            if c3.button(f"Analisar Oportunidade", key=client['nome']):
+                st.session_state.selected_client = client
+                st.session_state.view = 'prospect'
+                st.rerun()
+            st.markdown("---")
 
-    # Tabela de Dados Estilizada
-    st.markdown("#### 📂 Oportunidades por Cliente")
-    df = pd.DataFrame({
-        "Cliente": ["Farmácia Santo Antônio", "Mecânica Diesel Pro", "Supermercado Real", "Clínica Bem Estar"],
-        "Crédito Identificado": ["R$ 24.500,00", "R$ 42.100,00", "R$ 156.900,00", "R$ 12.400,00"],
-        "Status": ["Auditado ✅", "Aguardando e-CAC ⏳", "Pendente ❌", "Concluído ✅"]
-    })
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-# --- FOOTER ---
-st.markdown("---")
-st.caption("Contabiliza AI © 2026 - Tecnologia Propriatária de Inteligência Fiscal em Nuvem.")
+# 3. TELA DE DETALHES E PROSPECÇÃO IA
+elif st.session_state.view == 'prospect':
+    client = st.session_state.selected_client
+    
+    if st.button("← Voltar para Lista"):
+        st.session_state.view = 'client_list'
+        st.rerun()
+        
+    st.title(f"💼 Estratégia: {client['nome']}")
+    
+    col_left, col_right = st.columns(2)
+    
+    with col_left:
+        st.info(f"**O que a IA identificou:**\n\n{client['detalhes']}")
+        st.success(f"**Oferta Sugerida:**\n\n{client['oportunidade']}")
+        
+    with col_right:
+        st.markdown("### 🚀 Prospecção Inteligente")
+        st.write("A IA irá criar uma abordagem realista e humanizada para o WhatsApp do cliente.")
+        
+        if st.button("Gerar Prospecção e Enviar"):
+            with st.status("IA criando imagem realista da oportunidade...", expanded=True) as status:
+                time.sleep(2)
+                st.write("Simulando impacto financeiro no fluxo de caixa...")
+                time.sleep(2)
+                st.write("Redigindo texto humanizado (Sem cara de bot)...")
+                status.update(label="Prospecção Enviada!", state="complete", expanded=False)
+            
+            st.balloons()
+            
+            # SIMULAÇÃO DA MENSAGEM DA IA
+            st.chat_message("assistant").write(f"""
+                **Mensagem enviada para o cliente (via Contabilidade):**
+                
+                "Olá, Diretor da {client['nome']}. Tudo bem? 
+                
+                Estávamos revisando sua operação aqui na contabilidade com nossa nova ferramenta de auditoria e encontramos uma oportunidade real de recuperação de impostos (PIS/COFINS). 
+                
+                O valor identificado é de **R$ {client['credito']:,}**. Conseguimos usar isso para abater seus próximos impostos sem burocracia. 
+                
+                Fizemos um estudo rápido (veja o gráfico anexo) de como seu caixa ficaria com esse fôlego extra. Podemos agendar 5 min amanhã?"
+            """)
+            st.image("https://img.freepik.com/fotos-gratis/homem-negocios-analisando-graficos-financeiros-em-escritorio-moderno_23-2148835920.jpg", caption="Imagem gerada pela IA para ilustrar o ganho de capital ao cliente.")
