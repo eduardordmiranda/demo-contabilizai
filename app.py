@@ -1,130 +1,196 @@
 import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-import time
+import datetime
+import random  # só para simular variação nos valores
 
-# --- CONFIGURAÇÃO DE ALTA PERFORMANCE ---
-st.set_page_config(page_title="Contabiliza AI | Performance Real", layout="wide", initial_sidebar_state="collapsed")
+# Configuração da página
+st.set_page_config(
+    page_title="Contabiliza AI - Demonstração",
+    page_icon="💼",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- CSS: DESIGN DE ELITE COM FOCO NOS DADOS ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+# Função simulada de IA (substitua por chamada real ao Gemini/Claude depois)
+def simulate_ia_report(func_key):
+    today = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+    valor_base = random.randint(5000, 30000)  # Simula variação realista
     
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #F1F3F6; color: #333; }
-    header {visibility: hidden;}
+    reports = {
+        "recupera_inss": f"""
+        **Relatório de Recuperação INSS Patronal**  
+        Data: {today}  
+
+        **Valor estimado recuperável:** R$ {valor_base:,.2f}  
+        **Atualização SELIC aproximada:** +R$ {valor_base * 0.08:,.2f}  
+
+        **Itens encontrados:**  
+        - Verbas indenizatórias mal classificadas: R$ {valor_base//3:,.2f}  
+        - Horas extras sem reflexos corretos: R$ {valor_base//4:,.2f}  
+        - Adicional noturno/insalubridade indevido: R$ {valor_base//5:,.2f}  
+
+        **Risco de questionamento:** Médio  
+        **Próximos passos:** Gerar PER/DCOMP + anexar eSocial/GFIP  
+        """,
+
+        "conciliacao": f"""
+        **Conciliação Bancária Inteligente**  
+        Data: {today}  
+
+        **Divergências detectadas:** 7 itens  
+        **Lançamentos sugeridos:** 12  
+
+        Exemplos:  
+        - Taxa bancária não lançada: R$ 47,50  
+        - Depósito duplicado: R$ 1.200,00  
+        - Juros de mora não contabilizado  
+
+        **Tempo economizado estimado:** 8–12 horas/semana
+        """,
+
+        "alertas_fiscais": f"""
+        **Alertas Fiscais Proativos**  
+        Data: {today}  
+
+        **Pendências críticas:** DCTFWeb vencida há 3 dias  
+        **Pendências médias:** EFD-Contribuições em 5 dias  
+
+        **Ações sugeridas:**  
+        - Retificar DCTFWeb imediatamente  
+        - Compensar crédito acumulado
+        """,
+
+        "reforma": f"""
+        **Simulação Reforma Tributária**  
+        Data: {today}  
+
+        **Carga tributária atual:** 18,5%  
+        **Carga projetada (IBS/CBS):** 16,2%  
+        **Economia anual estimada:** R$ {valor_base // 2:,.2f}  
+
+        **Recomendação:** Manter regime atual por 12 meses
+        """,
+
+        "classifica_despesas": f"""
+        **Classificação Automática de Despesas**  
+        Data: {today}  
+
+        **Itens classificados:** 120  
+        **Exemplos:**  
+        - Aluguel → Despesa Operacional  
+        - Taxa bancária → Despesa Financeira (sugerido ajuste)  
+
+        **Tempo economizado:** 60–90%
+        """,
+
+        "pre_lancamentos": f"""
+        **Pré-lançamentos de Fechamento Mensal**  
+        Data: {today}  
+
+        **Lançamentos gerados:** 28  
+        **Provisões sugeridas:** Férias + 13º salário  
+
+        **Tempo economizado:** 40–70%
+        """,
+
+        "regua_cobranca": f"""
+        **Régua de Cobrança Inteligente**  
+        Data: {today}  
+
+        **Clientes inadimplentes detectados:** 4  
+        **Mensagens geradas:** Prontas para envio via WhatsApp
+        """,
+
+        "assistente": f"""
+        **Assistente de Dúvidas Contábeis**  
+        Data: {today}  
+
+        **Resposta IA:** Para esse CFOP, o CST correto é 00 (tributada integralmente) conforme legislação vigente.
+        """,
+
+        "planejamento": f"""
+        **Planejamento Tributário Simples**  
+        Data: {today}  
+
+        **Sugestões principais:**  
+        - Distribuição de lucros vs pró-labore: economia R$ {valor_base // 3:,.2f}/ano  
+        - Compensação de créditos acumulados: R$ {valor_base // 4:,.2f}
+        """,
+
+        "incentivos": f"""
+        **Incentivos Fiscais Setoriais**  
+        Data: {today}  
+
+        **Elegibilidade encontrada:** Redução de base ICMS para TI (SC)  
+        **Economia estimada:** R$ {valor_base // 2:,.2f}/ano
+        """
+    }
     
-    /* Grid de Cards Superiores (Cores da Imagem) */
-    .card-row { display: flex; gap: 8px; margin-bottom: 15px; }
-    .card { flex: 1; padding: 20px; color: white; border-radius: 4px; position: relative; min-height: 120px; }
-    .c-blue { background-color: #4A90E2; }
-    .c-cyan { background-color: #48C0C0; }
-    .c-orange { background-color: #F7943D; }
-    .c-pink { background-color: #F26685; }
-    
-    .card-label { font-size: 14px; opacity: 0.9; font-weight: 600; }
-    .card-value { font-size: 38px; font-weight: 800; display: block; margin-top: 5px; }
+    return reports.get(func_key, "<p>Relatório gerado com sucesso (simulação).</p>")
 
-    /* Painel Lateral Azul (Performance) */
-    .perf-panel { background-color: #4A90E2; color: white; border-radius: 4px; overflow: hidden; }
-    .perf-table { width: 100%; border-collapse: collapse; }
-    .perf-table td { border: 1px solid rgba(255,255,255,0.2); padding: 15px; text-align: center; width: 50%; }
-    .perf-label { font-size: 10px; text-transform: uppercase; display: block; opacity: 0.8; margin-bottom: 5px; }
-    .perf-val { font-size: 24px; font-weight: 700; }
+# Título da página
+st.title("Contabiliza AI - Demonstração")
+st.markdown("### Ferramenta de IA para escritórios contábeis | Teste todas as funcionalidades")
 
-    /* Estilo Filtros */
-    .filter-card { background: white; padding: 20px; border-radius: 4px; border: 1px solid #DFE3E8; margin-bottom: 10px; }
-</style>
-""", unsafe_allow_html=True)
+# Menu lateral com as funções
+st.sidebar.title("Funcionalidades")
+func_choice = st.sidebar.radio(
+    "Escolha a função para testar:",
+    [
+        "1. Recuperar créditos INSS patronal",
+        "2. Conciliação bancária inteligente",
+        "3. Alertas fiscais proativos",
+        "4. Simulação Reforma Tributária",
+        "5. Classificar despesas automaticamente",
+        "6. Pré-lançamentos de fechamento",
+        "7. Régua de cobrança de clientes",
+        "8. Assistente de dúvidas contábeis",
+        "9. Planejamento tributário simples",
+        "10. Incentivos fiscais setoriais"
+    ]
+)
 
-# --- NAVEGAÇÃO ---
-if 'view' not in st.session_state: st.session_state.view = 'main'
+# Mapeamento para chave interna
+func_map = {
+    "1. Recuperar créditos INSS patronal": "recupera_inss",
+    "2. Conciliação bancária inteligente": "conciliacao",
+    "3. Alertas fiscais proativos": "alertas_fiscais",
+    "4. Simulação Reforma Tributária": "reforma",
+    "5. Classificar despesas automaticamente": "classifica_despesas",
+    "6. Pré-lançamentos de fechamento": "pre_lancamentos",
+    "7. Régua de cobrança de clientes": "regua_cobranca",
+    "8. Assistente de dúvidas contábeis": "assistente",
+    "9. Planejamento tributário simples": "planejamento",
+    "10. Incentivos fiscais setoriais": "incentivos"
+}
 
-# --- LAYOUT ---
-col_side, col_main = st.columns([1, 3.2])
+selected_func = func_map[func_choice]
 
-with col_side:
-    # Quadrado de Filtros
-    st.markdown('<div class="filter-card">', unsafe_allow_html=True)
-    st.markdown("#### DashBoard Performance")
-    st.caption("Período:")
-    st.code("01/02/2019\n09/03/2020")
-    st.selectbox("Tipo de Atividade:", ["5s Auditorias", "Recuperação Tributária"])
-    st.button("🔍 Aplicar Filtros", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Painel de Status Azul (Fiel à Imagem)
-    st.markdown("""
-        <div class="perf-panel">
-            <table class="perf-table">
-                <tr>
-                    <td><span class="perf-label">Atividades Concluídas</span><span class="perf-val">9</span></td>
-                    <td><span class="perf-label">Menor Pontuação</span><span class="perf-val">37</span></td>
-                </tr>
-                <tr>
-                    <td><span class="perf-label">Atividades Pendentes</span><span class="perf-val">1</span></td>
-                    <td><span class="perf-label">Maior Pontuação</span><span class="perf-val">91</span></td>
-                </tr>
-                <tr>
-                    <td><span class="perf-label">Atividades Canceladas</span><span class="perf-val">0</span></td>
-                    <td><span class="perf-label">Tempo Médio (Dias)</span><span class="perf-val">12</span></td>
-                </tr>
-                <tr>
-                    <td><span class="perf-label">Na Média</span><span class="perf-val">5</span></td>
-                    <td><span class="perf-label">Desvio Padrão</span><span class="perf-val">19,36</span></td>
-                </tr>
-            </table>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col_main:
-    # Top Cards com Indicadores EXATOS da sua imagem
-    st.markdown("""
-        <div class="card-row">
-            <div class="card c-blue"><span class="card-label">Nota Média</span><span class="card-value">65,44</span></div>
-            <div class="card c-cyan"><span class="card-label">Atividades Totais</span><span class="card-value">10</span></div>
-            <div class="card c-orange"><span class="card-label">Comentários</span><span class="card-value">4</span></div>
-            <div class="card c-pink"><span class="card-label">Total de Notas/Fotos</span><span class="card-value">13</span></div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Gráfico de Linhas Profissional
-    st.markdown("<p style='text-align:center; color:#666; font-size:12px;'>Indicadores Gerais no Período: 01/02/2019 - 09/03/2020</p>", unsafe_allow_html=True)
-    
-    fig = go.Figure()
-    dates = ['01-02-19', '08-04-19', '14-06-19', '20-08-19', '26-10-19', '01-01-20', '09-03-20']
-    
-    # Linha Azul (Principal)
-    fig.add_trace(go.Scatter(x=dates, y=[30, 28, 48, 48, 85, 85, 62], mode='lines+markers', name='Performance', line=dict(color='#4A90E2', width=3)))
-    # Linha Rosa
-    fig.add_trace(go.Scatter(x=dates, y=[42, 0, 18, 0, 10, 0, 18], mode='lines+markers', name='Atividades', line=dict(color='#F26685', width=2)))
-    # Linha Laranja
-    fig.add_trace(go.Scatter(x=dates, y=[10, 0, 12, 0, 12, 0, 8], mode='lines+markers', name='Créditos', line=dict(color='#F7943D', width=2)))
-
-    fig.update_layout(
-        margin=dict(l=0, r=0, t=10, b=0), height=350,
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+# Formulário genérico para entrada de dados
+with st.expander(f"Preencha os dados para {func_choice}", expanded=True):
+    dados = st.text_area(
+        "Cole aqui os dados (planilha, exportação, descrição do caso, etc.)",
+        height=150,
+        placeholder="Exemplo:\nCNPJ: 12.345.678/0001-99\nRegime: Simples Nacional\nFaturamento mensal: R$ 120.000\n..."
     )
-    st.plotly_chart(fig, use_container_width=True)
 
-    # Tabela de Oportunidades
-    st.markdown("#### 🚀 Oportunidades de Recuperação (Análise IA)")
-    df = pd.DataFrame({
-        "Empresa": ["Farmácia Santo Antônio", "Mecânica Diesel Pro", "Supermercado Real"],
-        "Crédito Identificado": ["R$ 24.500", "R$ 42.100", "R$ 156.900"],
-        "Status": ["Pendente", "Em Análise", "Pendente"]
-    })
-    
-    # Renderizando a tabela e o botão de prospecção
-    for i, row in df.iterrows():
-        c1, c2, c3, c4 = st.columns([2, 1, 1, 1.5])
-        c1.write(f"**{row['Empresa']}**")
-        c2.write(row['Crédito Identificado'])
-        c3.write(row['Status'])
-        if c4.button(f"Prospectar {row['Empresa']}", key=f"p_{i}"):
-            with st.spinner("IA gerando abordagem humanizada..."):
-                time.sleep(2)
-                st.toast(f"Proposta enviada para {row['Empresa']}!")
-                st.success(f"A IA enviou uma imagem de impacto real para o cliente via WhatsApp.")
-        st.divider()
+    if st.button("Gerar Relatório", type="primary"):
+        with st.spinner("Analisando com IA..."):
+            # Simula delay de IA
+            import time
+            time.sleep(1.5)
+            
+            report = simulate_ia_report(selected_func)
+            st.markdown("### Relatório Gerado")
+            st.markdown(report, unsafe_allow_html=True)
+            
+            # Botão de "download" simulado
+            st.download_button(
+                label="Baixar relatório como PDF (simulado)",
+                data=report,
+                file_name=f"relatorio_{selected_func}.txt",
+                mime="text/plain"
+            )
+
+# Rodapé
+st.markdown("---")
+st.caption("Contabiliza AI - Demonstração | Versão protótipo | 2026")
